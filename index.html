@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سجل تعمير الجامعة السيفية - سيدهثثور</title>
+  
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Supabase & Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="site-identity">
+        <h1>الجامعة السيفية - سدبور</h1>
+        <p>SIDDHPUR CAMPUS CONSTRUCTION LOG</p>
+      </div>
+      <button class="btn-milestone" onclick="toggleDrawer(true)">
+        <span>المراحل والمخطط (Milestones)</span>
+        <span>📑</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Chronicle (Empty container waiting for JS to load Database logs) -->
+  <main class="chronicle-container" id="chronicle-feed">
+    <div style="text-align: center; padding: 50px; font-size: 1.5rem; color: var(--gold-accent);">
+      جاري تحميل السجل... (Loading Logs...)
+    </div>
+  </main>
+
+  <!-- Milestone Track Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer(false)">
+    <div class="milestone-drawer" onclick="event.stopPropagation()">
+      <div class="drawer-header">
+        <h2>مراحل المشروع (Milestones)</h2>
+        <button class="close-btn" onclick="toggleDrawer(false)">&times;</button>
+      </div>
+
+      <div class="drawer-body">
+        
+        <div class="milestone-section">
+          <h3><span>✅</span> ما تم إنجازه (Achieved)</h3>
+          <div class="milestone-item achieved">
+            <div class="milestone-title">تسوية الموقع والأساسات الأولية</div>
+            <div class="milestone-sub">تم الإنجاز في: محرم الحرام ١٤٤٨ هـ</div>
+          </div>
+        </div>
+
+        <div class="milestone-section">
+          <h3><span>⚡</span> جاري العمل عليه (In Progress)</h3>
+          <div class="milestone-item in-progress">
+            <div class="milestone-title">تسليح وصب سقف الطابق الأول</div>
+            <div class="milestone-sub">نسبة الإنجاز: ٦٥٪</div>
+          </div>
+        </div>
+
+        <div class="milestone-section">
+          <h3><span>⏳</span> الخطط القادمة (Future Plans)</h3>
+          <div class="milestone-item future">
+            <div class="milestone-title">أعمال الكسوة الرخامية الخارجية</div>
+            <div class="milestone-sub">المرحلة القادمة: ربيع الآخر ١٤٤٨ هـ</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="js/hijri_date.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Toggle Milestone Drawer
+    function toggleDrawer(isOpen) {
+      const overlay = document.getElementById('drawerOverlay');
+      if (isOpen) {
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      } else {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+    // ESC key closes drawer
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') toggleDrawer(false);
+    });
+  </script>
+</body>
+</html>

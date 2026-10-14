@@ -1,0 +1,328 @@
+/* Core Variables & Fonts */
+@font-face {
+  font-family: 'Kanz-al-Marjaan';
+  src: url(https://ugrashpfqjumdvvdoecz.supabase.co/storage/v1/object/public/log_attachments/Kanz-al-Marjaan.woff2) format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg-parchment: #FDFBF7;
+  --card-parchment: #FFFFFF;
+  --fatimi-green: #0E4735;
+  --fatimi-green-light: #165b44;
+  --gold-accent: #C5A059;
+  --gold-border: #E8D8B0;
+  --text-ink: #22201E;
+  --text-muted: #666059;
+  --font-kanz: 'Kanz-al-Marjaan', 'Amiri', 'Scheherazade New', serif;
+  --font-system: system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--bg-parchment);
+  color: var(--text-ink);
+  font-family: var(--font-kanz);
+  line-height: 2.2;
+  padding-bottom: 60px;
+}
+
+/* --- Top Navigation & Header --- */
+.top-header {
+  background: linear-gradient(180deg, #FFFFFF 0%, var(--bg-parchment) 100%);
+  border-bottom: 2px solid var(--gold-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 15px rgba(197, 160, 89, 0.08);
+}
+
+.header-inner {
+  max-width: 950px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.site-identity h1 {
+  font-size: 1.5rem;
+  color: var(--fatimi-green);
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.site-identity p {
+  font-family: var(--font-system);
+  font-size: 0.8rem;
+  color: var(--gold-accent);
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.btn-milestone {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--fatimi-green);
+  color: #FFF;
+  border: 1px solid var(--gold-accent);
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-family: var(--font-kanz);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 3px 10px rgba(14, 71, 53, 0.2);
+}
+
+.btn-milestone:hover {
+  background-color: var(--fatimi-green-light);
+  transform: translateY(-1px);
+}
+
+/* --- Manuscript Book Container --- */
+.chronicle-container {
+  max-width: 860px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.book-page {
+  background: var(--card-parchment);
+  border: 1px solid var(--gold-border);
+  border-radius: 8px;
+  padding: 35px 40px;
+  margin-bottom: 40px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(197, 160, 89, 0.15);
+  position: relative;
+}
+
+.book-page::before {
+  content: "";
+  position: absolute;
+  top: 10px; bottom: 10px; right: 10px; left: 10px;
+  border: 1px solid rgba(197, 160, 89, 0.35);
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px dashed var(--gold-border);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+
+.page-date-hijri {
+  font-size: 1.35rem;
+  color: var(--fatimi-green);
+  font-weight: bold;
+}
+
+.page-date-gregorian {
+  font-family: var(--font-system);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  direction: ltr;
+}
+
+.page-content {
+  font-size: 1.25rem;
+  color: var(--text-ink);
+  text-align: justify;
+  margin-bottom: 25px;
+}
+
+.page-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 150px));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.gallery-thumb {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--gold-border);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.gallery-thumb:hover { transform: scale(1.02); }
+
+.page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(197, 160, 89, 0.2);
+  font-family: var(--font-system);
+  font-size: 0.82rem;
+}
+
+.badge-tag {
+  background: rgba(14, 71, 53, 0.08);
+  color: var(--fatimi-green);
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-family: var(--font-kanz);
+  font-size: 0.95rem;
+  border: 1px solid rgba(14, 71, 53, 0.2);
+}
+
+/* --- Form & Admin Panel --- */
+.admin-container {
+  max-width: 600px;
+  margin: 40px auto;
+  background: var(--card-parchment);
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--gold-border);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.form-group { margin-bottom: 20px; }
+
+.form-group label {
+  display: block;
+  font-size: 1.2rem;
+  color: var(--fatimi-green);
+  margin-bottom: 8px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--gold-border);
+  border-radius: 6px;
+  font-family: var(--font-kanz);
+  font-size: 1.2rem;
+  background: #FAFAFA;
+}
+
+.form-control:focus { outline: none; border-color: var(--fatimi-green); }
+
+textarea.form-control { resize: vertical; min-height: 120px; }
+
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  background: var(--fatimi-green);
+  color: #FFF;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-kanz);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.btn-submit:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+.hijri-preview {
+  font-size: 1rem;
+  color: var(--gold-accent);
+  margin-top: 5px;
+}
+
+/* --- Media Modal --- */
+.media-modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.media-modal.active { display: flex; }
+
+.modal-content-wrapper {
+  position: relative;
+  width: 90vw;
+  height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content-wrapper img {
+  max-width: 100%; max-height: 100%;
+  border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.modal-content-wrapper iframe {
+  width: 100%; height: 100%;
+  background: #FFF;
+  border: none; border-radius: 4px;
+}
+
+.close-modal {
+  position: absolute;
+  top: -40px; right: 0;
+  color: #FFF;
+  font-size: 2rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-system);
+}
+
+/* --- Milestone Drawer (from previous setup) --- */
+.drawer-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(18, 30, 25, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 200; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.drawer-overlay.active { opacity: 1; pointer-events: auto; }
+.milestone-drawer {
+  position: fixed; top: 0; left: 0; width: 100%; max-width: 440px; height: 100%;
+  background: #FFFFFF; z-index: 210;
+  box-shadow: 10px 0 35px rgba(0, 0, 0, 0.15);
+  transform: translateX(-100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column;
+}
+.drawer-overlay.active .milestone-drawer { transform: translateX(0); }
+.drawer-header {
+  padding: 24px; background: var(--fatimi-green); color: #FFF;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 2px solid var(--gold-accent);
+}
+.close-btn { background: none; border: none; color: #FFF; font-size: 1.5rem; cursor: pointer; }
+.drawer-body { padding: 24px; overflow-y: auto; flex: 1; }
+.milestone-section { margin-bottom: 30px; }
+.milestone-section h3 {
+  font-size: 1.15rem; color: var(--fatimi-green);
+  border-bottom: 1px solid var(--gold-border);
+  padding-bottom: 6px; margin-bottom: 14px;
+}
+.milestone-item {
+  padding: 12px 14px; border-radius: 6px; margin-bottom: 10px;
+  border: 1px solid #ECE7DE; background: var(--bg-parchment);
+}
+.milestone-item.achieved { border-right: 4px solid var(--fatimi-green); }
+.milestone-item.in-progress { border-right: 4px solid var(--gold-accent); background: #FFFDF8; }
+.milestone-item.future { border-right: 4px solid #BDBDBD; opacity: 0.85; }
+.milestone-title { font-size: 1.1rem; font-weight: bold; }
+.milestone-sub { font-family: var(--font-system); font-size: 0.8rem; color: var(--text-muted); direction: rtl; }
+
+@media print {
+  .top-header, .btn-milestone, .drawer-overlay { display: none !important; }
+  body { background: #FFF; }
+  .book-page { page-break-after: always; box-shadow: none; border: 1px solid #999; }
+}

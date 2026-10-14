@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدخال التقرير اليومي</title>
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Supabase & Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <div class="admin-container">
+    <h2 style="color: var(--fatimi-green); margin-bottom: 20px;">تسجيل يوميات المشروع</h2>
+    
+    <!-- Login Section -->
+    <div id="loginSection">
+      <h3 style="color: var(--fatimi-green);">تسجيل الدخول (Admin Login)</h3>
+      <input type="email" id="adminEmail" class="form-control" placeholder="Email" style="margin-top:10px;" required>
+      <input type="password" id="adminPassword" class="form-control" placeholder="Password" style="margin-top:10px;" required>
+      <button id="btnLogin" class="btn-submit" style="margin-top:15px;">دخول (Login)</button>
+    </div>
+
+    <!-- Hidden Submission Form -->
+    <form id="dailyLogForm" style="display: none;">
+      
+      <div class="form-group">
+        <label>التاريخ (Gregorian Date)</label>
+        <input type="date" id="gregorianDate" class="form-control" required>
+        <div id="hijriPreview" class="hijri-preview"></div>
+      </div>
+
+      <div class="form-group">
+        <label>القطاع (Sector)</label>
+        <select id="sectorTag" class="form-control" required>
+          <option value="الجناح الشمالي">الجناح الشمالي</option>
+          <option value="المبنى التعليمي الرئيسي">المبنى التعليمي الرئيسي</option>
+          <option value="المسجد الفاطمي">المسجد الفاطمي</option>
+          <option value="المرافق العامة">المرافق العامة</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>التفاصيل (Log Details)</label>
+        <textarea id="bodyText" class="form-control" placeholder="أدخل تفاصيل الإنجاز اليومي..." required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>المرفق (Single Image or PDF)</label>
+        <input type="file" id="mediaUpload" class="form-control" accept="image/png, image/jpeg, application/pdf">
+      </div>
+
+      <button type="submit" class="btn-submit">حفظ التقرير (Submit Log)</button>
+    </form>
+  </div>
+
+  <script src="js/hijri_date.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
