@@ -3,179 +3,379 @@
 const SUPABASE_URL = 'https://ugrashpfqjumdvvdoecz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVncmFzaHBmcWp1bWR2dmRvZWN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MTE4MDMsImV4cCI6MjEwNzQ4NzgwM30.TsP36LDPyRC_fJAA2wQsrXFwTs8-ezZBtYM4lQsGoTc';
 
-// Initialize the client only if the script is loaded via CDN
-const supabaseClient = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const _supabase = (typeof supabase !== 'undefined') 
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
+  : null;
 
-// --- 2. Live Hijri Date Conversion Preview ---
-const dateInput = document.getElementById('gregorianDate');
+// File queue state for multi-file upload
+let selectedFilesQueue = [];
+
+// --- 2. Proper RTL Hijri Date Formatter ---
+// Format starts from the right: [Date] [Month] [Year] H
+function formatHijriRTL(dateObj) {
+  if (typeof HijriDate === 'undefined') return '';
+  const hijri = HijriDate.fromGregorian(dateObj); //[cite: 1]
+  const d = hijri.getDate(); //[cite: 1]
+  const m = HijriDate.getMonthName(hijri.getMonth()); //[cite: 1]
+  const y = hijri.getYear(); //[cite: 1]
+  
+  // Right-to-left numeral/month sequence: e.g. "٢٤ Rabi al-Awwal 1448 H"
+  return `${d} ${m} ${y} H`;
+}
+
+// Live preview listener for admin Gregorian date picker
+const datePicker = document.getElementById('gregorianDate');
 const hijriPreview = document.getElementById('hijriPreview');
 
-if (dateInput && typeof HijriDate !== 'undefined') {
-  dateInput.addEventListener('change', function(e) {
-    const selectedDate = new Date(e.target.value);
-    const hijri = HijriDate.fromGregorian(selectedDate);
-    const hYear = hijri.getYear();
-    const hMonthIndex = hijri.getMonth();
-    const hDay = hijri.getDate();
-    const hMonthName = HijriDate.getMonthName(hMonthIndex);
-    
-    hijriPreview.textContent = `الموافق: ${hDay} ${hMonthName} ${hYear} هـ`;
+if (datePicker && hijriPreview) {
+  datePicker.addEventListener('change', (e) => {
+    if (!e.target.value) return;
+    const gDate = new Date(e.target.value);
+    hijriPreview.textContent = formatHijriRTL(gDate);
   });
 }
 
-// --- 3. Authentication Logic (Admin Panel) ---
-const loginBtn = document.getElementById('btnLogin');
-if (loginBtn && supabaseClient) {
-  loginBtn.addEventListener('click', async () => {
+// --- 3. Authentication & Session Handling ---
+async function checkAuthState() {
+  if (!_supabase) return;
+  const { data: { session } } = await _supabase.auth.getSession();
+  
+  const loginCard = document.getElementById('loginCard');
+  const dashboard = document.getElementById('dashboardSection');
+  const authNav = document.getElementById('authNavControls');
+  const userBadge = document.getElementById('userEmailBadge');
+
+  if (session) {
+    if (loginCard) loginCard.style.display = 'none';
+    if (dashboard) dashboard.style.display = 'block';
+    if (authNav) authNav.style.display = 'flex';
+    if (userBadge) userBadge.textContent = session.user.email;
+    
+    // Load admin initializers
+    loadSectorsDropdown();
+    loadSectorsManager();
+    loadAdminLogs();
+  } else {
+    if (loginCard) loginCard.style.display = 'block';
+    if (dashboard) dashboard.style.display = 'none';
+    if (authNav) authNav.style.display = 'none';
+  }
+}
+
+const loginForm = document.getElementById('adminLoginForm');
+if (loginForm && _supabase) {
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
     const email = document.getElementById('adminEmail').value;
     const password = document.getElementById('adminPassword').value;
-    
-    loginBtn.textContent = 'جاري التحقق...';
-    loginBtn.disabled = true;
+    const btn = document.getElementById('btnLogin');
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    
+    btn.textContent = 'Signing in...';
+    btn.disabled = true;
+
+    const { error } = await _supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      alert('فشل تسجيل الدخول: ' + error.message);
-      loginBtn.textContent = 'دخول (Login)';
-      loginBtn.disabled = false;
+      alert('Authentication Failed: ' + error.message);
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
     } else {
-      document.getElementById('loginSection').style.display = 'none';
-      document.getElementById('dailyLogForm').style.display = 'block';
+      checkAuthState();
     }
   });
 }
 
-// --- 4. Form Submission & File Upload ---
-const form = document.getElementById('dailyLogForm');
-if (form && supabaseClient) {
-  form.addEventListener('submit', async function(e) {
+const btnLogout = document.getElementById('btnLogout');
+if (btnLogout && _supabase) {
+  btnLogout.addEventListener('click', async () => {
+    await _supabase.auth.signOut();
+    checkAuthState();
+  });
+}
+
+// --- 4. Admin Tab Switching ---
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+  const targetTab = document.getElementById(`tab-${tabId}`);
+  if (targetTab) targetTab.classList.add('active');
+
+  const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+  if (activeBtn) activeBtn.classList.add('active');
+
+  if (tabId === 'manage-logs') loadAdminLogs();
+  if (tabId === 'manage-sectors') loadSectorsManager();
+}
+
+// --- 5. Multiple File Queue Handling ---
+const mediaUploadInput = document.getElementById('mediaUpload');
+const uploadQueueEl = document.getElementById('uploadQueue');
+
+if (mediaUploadInput) {
+  mediaUploadInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+      // Prevent duplicates in queue
+      if (!selectedFilesQueue.some(f => f.name === file.name && f.size === file.size)) {
+        selectedFilesQueue.push(file);
+      }
+    });
+    renderUploadQueue();
+    mediaUploadInput.value = ''; // Reset input to allow selecting more
+  });
+}
+
+function renderUploadQueue() {
+  if (!uploadQueueEl) return;
+  uploadQueueEl.innerHTML = '';
+  selectedFilesQueue.forEach((file, index) => {
+    const typeLabel = file.type === 'application/pdf' ? '📄 PDF' : '🖼️ IMG';
+    const row = document.createElement('div');
+    row.className = 'queue-item';
+    row.innerHTML = `
+      <span><strong>${typeLabel}</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)</span>
+      <button type="button" class="btn-remove-queue" onclick="removeQueuedFile(${index})">&times;</button>
+    `;
+    uploadQueueEl.appendChild(row);
+  });
+}
+
+function removeQueuedFile(index) {
+  selectedFilesQueue.splice(index, 1);
+  renderUploadQueue();
+}
+
+// --- 6. Sector / Block (القطاع) Management ---
+async function loadSectorsDropdown() {
+  const select = document.getElementById('sectorSelect');
+  if (!select || !_supabase) return;
+
+  const { data: sectors, error } = await _supabase.from('sectors').select('*').order('name');
+  if (error) return;
+
+  select.innerHTML = '<option value="" disabled selected>Select a sector / block...</option>';
+  sectors.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.name;
+    opt.textContent = s.name;
+    select.appendChild(opt);
+  });
+}
+
+async function loadSectorsManager() {
+  const list = document.getElementById('sectorsList');
+  if (!list || !_supabase) return;
+
+  const { data: sectors, error } = await _supabase.from('sectors').select('*').order('name');
+  if (error) {
+    list.innerHTML = 'Failed to load sectors.';
+    return;
+  }
+
+  list.innerHTML = '';
+  sectors.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'sector-chip-row';
+    item.innerHTML = `
+      <span>${s.name}</span>
+      <button class="btn-delete-sector" onclick="deleteSector(${s.id}, '${s.name}')">Delete Block</button>
+    `;
+    list.appendChild(item);
+  });
+}
+
+const addSectorForm = document.getElementById('addSectorForm');
+if (addSectorForm && _supabase) {
+  addSectorForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const submitBtn = form.querySelector('.btn-submit');
-    submitBtn.textContent = 'جاري الرفع والحفظ... (Saving...)';
-    submitBtn.disabled = true;
+    const input = document.getElementById('newSectorName');
+    const name = input.value.trim();
+    if (!name) return;
+
+    const { error } = await _supabase.from('sectors').insert([{ name }]);
+    if (error) {
+      alert('Error adding sector: ' + error.message);
+    } else {
+      input.value = '';
+      loadSectorsManager();
+      loadSectorsDropdown();
+    }
+  });
+}
+
+async function deleteSector(id, name) {
+  if (!confirm(`Are you sure you want to delete sector block: "${name}"?`)) return;
+  const { error } = await _supabase.from('sectors').delete().eq('id', id);
+  if (error) {
+    alert('Failed to delete sector: ' + error.message);
+  } else {
+    loadSectorsManager();
+    loadSectorsDropdown();
+  }
+}
+
+// --- 7. Log Creation with Multiple Attachments ---
+const dailyLogForm = document.getElementById('dailyLogForm');
+if (dailyLogForm && _supabase) {
+  dailyLogForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const btn = document.getElementById('btnSubmitLog');
+    btn.disabled = true;
+    btn.textContent = 'Uploading files & publishing...';
 
     const gDate = document.getElementById('gregorianDate').value;
-    const sector = document.getElementById('sectorTag').value;
+    const sector = document.getElementById('sectorSelect').value;
     const text = document.getElementById('bodyText').value;
-    const fileInput = document.getElementById('mediaUpload').files[0];
-    
-    let mediaUrl = null;
-    let mediaType = null;
 
-    // Handle Storage Upload if file exists
-    if (fileInput) {
-      const fileExt = fileInput.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      mediaType = (fileExt.toLowerCase() === 'pdf') ? 'pdf' : 'image';
+    const uploadedMediaList = [];
 
-      const { data: uploadData, error: uploadError } = await supabaseClient.storage
-        .from('log_attachments')
-        .upload(fileName, fileInput);
+    // Upload files sequentially to Supabase Storage
+    for (const file of selectedFilesQueue) {
+      const ext = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+      const isPdf = file.type === 'application/pdf' || ext.toLowerCase() === 'pdf';
 
-      if (uploadError) {
-        alert('Upload Error: ' + uploadError.message);
-        submitBtn.textContent = 'حفظ التقرير (Submit Log)';
-        submitBtn.disabled = false;
-        return;
+      const { data, error } = await _supabase.storage.from('log_attachments').upload(fileName, file);
+      if (!error) {
+        const { data: pubData } = _supabase.storage.from('log_attachments').getPublicUrl(fileName);
+        uploadedMediaList.push({
+          url: pubData.publicUrl,
+          type: isPdf ? 'pdf' : 'image',
+          name: file.name
+        });
       }
-      
-      const { data: publicUrlData } = supabaseClient.storage
-        .from('log_attachments')
-        .getPublicUrl(fileName);
-      
-      mediaUrl = publicUrlData.publicUrl;
     }
 
-    // Insert into Database
-    const { data, error } = await supabaseClient
-      .from('daily_logs')
-      .insert([
-        { 
-          gregorian_date: gDate, 
-          sector: sector, 
-          body_text: text, 
-          media_url: mediaUrl,
-          media_type: mediaType 
-        }
-      ]);
+    // Insert record with media_files JSONB array
+    const { error: dbError } = await _supabase.from('daily_logs').insert([{
+      gregorian_date: gDate,
+      sector: sector,
+      body_text: text,
+      media_files: uploadedMediaList
+    }]);
 
-    if (error) {
-      alert('Database Error: ' + error.message);
+    if (dbError) {
+      alert('Error saving log: ' + dbError.message);
     } else {
-      alert('تم حفظ التقرير بنجاح (Log Saved Successfully)');
-      form.reset();
-      hijriPreview.textContent = '';
+      alert('Daily log published successfully!');
+      dailyLogForm.reset();
+      selectedFilesQueue = [];
+      renderUploadQueue();
+      hijriPreview.textContent = 'Select date...';
     }
 
-    submitBtn.textContent = 'حفظ التقرير (Submit Log)';
-    submitBtn.disabled = false;
+    btn.disabled = false;
+    btn.textContent = 'Publish Daily Log';
   });
 }
 
-// --- 5. Fetching Logs (Index Page) ---
-async function loadLogs() {
-  const container = document.getElementById('chronicle-feed');
-  if (!container || !supabaseClient) return;
+// --- 8. Admin Logs Table & Deletion ---
+async function loadAdminLogs() {
+  const tbody = document.getElementById('adminLogsTableBody');
+  if (!tbody || !_supabase) return;
 
-  const { data: logs, error } = await supabaseClient
+  const { data: logs, error } = await _supabase.from('daily_logs').select('*').order('gregorian_date', { ascending: false });
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:red;">Error loading logs.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = '';
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No log entries logged yet.</td></tr>`;
+    return;
+  }
+
+  logs.forEach(log => {
+    const dateObj = new Date(log.gregorian_date);
+    const hFormatted = formatHijriRTL(dateObj);
+    const mediaCount = (log.media_files || []).length + (log.media_url ? 1 : 0);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${log.gregorian_date}</td>
+      <td style="font-family: var(--font-kanz); direction: rtl; font-size: 1.1rem;">${hFormatted}</td>
+      <td><strong>${log.sector}</strong></td>
+      <td>${mediaCount} item(s)</td>
+      <td>
+        <button class="btn-delete-log" onclick="deleteLogEntry(${log.id})">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function deleteLogEntry(id) {
+  if (!confirm('Are you sure you want to delete this log entry permanently?')) return;
+  const { error } = await _supabase.from('daily_logs').delete().eq('id', id);
+  if (error) {
+    alert('Failed to delete log: ' + error.message);
+  } else {
+    loadAdminLogs();
+  }
+}
+
+// --- 9. Public Chronicle Feed Loader (index.html) ---
+async function loadChronicleFeed() {
+  const container = document.getElementById('chronicle-feed');
+  if (!container || !_supabase) return;
+
+  const { data: logs, error } = await _supabase
     .from('daily_logs')
     .select('*')
     .order('gregorian_date', { ascending: false });
 
   if (error) {
-    container.innerHTML = `<div style="text-align:center; padding: 40px; color: red;">فشل تحميل البيانات (Error loading logs)</div>`;
-    console.error(error);
+    container.innerHTML = `<div style="text-align:center; padding: 40px; color: red;">Failed to load chronicle records.</div>`;
     return;
   }
 
-  container.innerHTML = ''; // Clear loading text
-
+  container.innerHTML = '';
   if (logs.length === 0) {
-    container.innerHTML = `<div style="text-align:center; padding: 40px;">لا توجد تقارير بعد (No logs available yet)</div>`;
+    container.innerHTML = `<div style="text-align:center; padding: 40px;">No chronicle entries recorded yet.</div>`;
     return;
   }
 
   logs.forEach(log => {
-    // Convert date string for display
     const dateObj = new Date(log.gregorian_date);
-    let hString = '';
-    
-    if (typeof HijriDate !== 'undefined') {
-      const hijri = HijriDate.fromGregorian(dateObj);
-      hString = `${hijri.getDate()} ${HijriDate.getMonthName(hijri.getMonth())} ${hijri.getYear()} هـ`;
+    const hijriString = formatHijriRTL(dateObj);
+
+    // Normalize media attachments across both formats
+    let mediaItems = log.media_files || [];
+    if (log.media_url && mediaItems.length === 0) {
+      mediaItems = [{ url: log.media_url, type: log.media_type || 'image', name: 'Attachment' }];
     }
 
-    // Build Media HTML
     let mediaHtml = '';
-    if (log.media_url) {
-      if (log.media_type === 'pdf') {
-        mediaHtml = `
-          <div class="page-gallery">
-            <button class="btn-milestone" onclick="openMediaModal('${log.media_url}', 'pdf')" type="button">
-              📄 عرض المرفق (View PDF)
+    if (mediaItems.length > 0) {
+      let attachmentsHtml = '';
+      mediaItems.forEach(item => {
+        if (item.type === 'pdf') {
+          attachmentsHtml += `
+            <button class="pdf-attachment-btn" onclick="openMediaModal('${item.url}', 'pdf')">
+              <span>📄</span> View PDF Document
             </button>
-          </div>`;
-      } else {
-        mediaHtml = `
-          <div class="page-gallery">
-            <img class="gallery-thumb" src="${log.media_url}" alt="Site Photo" onclick="openMediaModal('${log.media_url}', 'image')">
-          </div>`;
-      }
+          `;
+        } else {
+          attachmentsHtml += `
+            <img class="gallery-thumb" src="${item.url}" alt="Site Photo" onclick="openMediaModal('${item.url}', 'image')">
+          `;
+        }
+      });
+      mediaHtml = `<div class="page-gallery">${attachmentsHtml}</div>`;
     }
 
-    // Inject the book page layout
     const article = `
       <article class="book-page">
         <header class="page-header">
-          <span class="page-date-hijri">${hString}</span>
-          <span class="page-date-gregorian">${dateObj.toDateString()}</span>
+          <span class="page-date-hijri" dir="rtl">${hijriString}</span>
+          <span class="page-date-gregorian">${dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
         </header>
         <div class="page-content">${log.body_text}</div>
         ${mediaHtml}
         <footer class="page-footer">
-          <span class="badge-tag">القطاع: ${log.sector}</span>
+          <span class="badge-tag">${log.sector}</span>
         </footer>
       </article>
     `;
@@ -183,10 +383,7 @@ async function loadLogs() {
   });
 }
 
-// Run the loader when the public page opens
-document.addEventListener('DOMContentLoaded', loadLogs);
-
-// --- 6. Media Modal Logic ---
+// Media Modal Logic
 function openMediaModal(fileUrl, fileType) {
   const modal = document.createElement('div');
   modal.className = 'media-modal active';
@@ -212,9 +409,19 @@ function openMediaModal(fileUrl, fileType) {
   wrapper.appendChild(closeBtn);
   modal.appendChild(wrapper);
   
-  modal.addEventListener('click', function(e) {
+  modal.addEventListener('click', (e) => {
     if (e.target === modal) document.body.removeChild(modal);
   });
 
   document.body.appendChild(modal);
 }
+
+// Initializer
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('chronicle-feed')) {
+    loadChronicleFeed();
+  }
+  if (document.getElementById('loginCard') || document.getElementById('dashboardSection')) {
+    checkAuthState();
+  }
+});

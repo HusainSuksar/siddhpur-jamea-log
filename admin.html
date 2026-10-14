@@ -1,62 +1,151 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>إدخال التقرير اليومي</title>
+  <title>Admin Portal | Siddhpur Jamea Construction Log</title>
   <link rel="stylesheet" href="css/style.css">
-  
-  <!-- Supabase & Dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-  <div class="admin-container">
-    <h2 style="color: var(--fatimi-green); margin-bottom: 20px;">تسجيل يوميات المشروع</h2>
-    
-    <!-- Login Section -->
-    <div id="loginSection">
-      <h3 style="color: var(--fatimi-green);">تسجيل الدخول (Admin Login)</h3>
-      <input type="email" id="adminEmail" class="form-control" placeholder="Email" style="margin-top:10px;" required>
-      <input type="password" id="adminPassword" class="form-control" placeholder="Password" style="margin-top:10px;" required>
-      <button id="btnLogin" class="btn-submit" style="margin-top:15px;">دخول (Login)</button>
+  <!-- Top Header -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="site-identity">
+        <h1>Al Jamea tus Saifiyah</h1>
+        <p>SIDDHPUR CAMPUS &bull; ADMIN PORTAL</p>
+      </div>
+      <div id="authNavControls" style="display: none;">
+        <span id="userEmailBadge" style="font-size: 0.85rem; margin-right: 12px; color: var(--text-muted);"></span>
+        <button id="btnLogout" class="btn-secondary">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-shell">
+
+    <!-- Login Card (Shown if unauthenticated) -->
+    <div id="loginCard" class="admin-card" style="max-width: 450px; margin: 60px auto;">
+      <h2 style="color: var(--fatimi-green); margin-bottom: 8px;">Supervisor Login</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px;">
+        Sign in to post updates and manage project records.
+      </p>
+
+      <form id="adminLoginForm">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="adminEmail" class="form-control" required placeholder="engineer@jamea.edu">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="adminPassword" class="form-control" required placeholder="••••••••">
+        </div>
+        <button type="submit" id="btnLogin" class="btn-primary" style="width: 100%;">Sign In</button>
+      </form>
     </div>
 
-    <!-- Hidden Submission Form -->
-    <form id="dailyLogForm" style="display: none;">
-      
-      <div class="form-group">
-        <label>التاريخ (Gregorian Date)</label>
-        <input type="date" id="gregorianDate" class="form-control" required>
-        <div id="hijriPreview" class="hijri-preview"></div>
+    <!-- Authenticated Dashboard -->
+    <div id="dashboardSection" style="display: none;">
+
+      <!-- Nav Tabs -->
+      <div class="admin-nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('new-log')">Post Daily Log</button>
+        <button class="tab-btn" onclick="switchTab('manage-logs')">Manage Logs History</button>
+        <button class="tab-btn" onclick="switchTab('manage-sectors')">Sector / Block Settings (القطاع)</button>
       </div>
 
-      <div class="form-group">
-        <label>القطاع (Sector)</label>
-        <select id="sectorTag" class="form-control" required>
-          <option value="الجناح الشمالي">الجناح الشمالي</option>
-          <option value="المبنى التعليمي الرئيسي">المبنى التعليمي الرئيسي</option>
-          <option value="المسجد الفاطمي">المسجد الفاطمي</option>
-          <option value="المرافق العامة">المرافق العامة</option>
-        </select>
-      </div>
+      <!-- Tab 1: Create New Log Entry -->
+      <section id="tab-new-log" class="tab-content active admin-card">
+        <div class="admin-card-header">
+          <h2>Create New Chronicle Entry</h2>
+          <span style="font-size: 0.85rem; color: var(--gold-accent);">Kanz al Marjaan Supported</span>
+        </div>
 
-      <div class="form-group">
-        <label>التفاصيل (Log Details)</label>
-        <textarea id="bodyText" class="form-control" placeholder="أدخل تفاصيل الإنجاز اليومي..." required></textarea>
-      </div>
+        <form id="dailyLogForm">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="form-group">
+              <label>Gregorian Date</label>
+              <input type="date" id="gregorianDate" class="form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Hijri Date (Calculated Right-to-Left)</label>
+              <div id="hijriPreview" class="form-control" style="background: var(--gold-light); font-weight: bold; direction: rtl; font-family: var(--font-kanz); font-size: 1.25rem;">
+                Select date...
+              </div>
+            </div>
+          </div>
 
-      <div class="form-group">
-        <label>المرفق (Single Image or PDF)</label>
-        <input type="file" id="mediaUpload" class="form-control" accept="image/png, image/jpeg, application/pdf">
-      </div>
+          <div class="form-group">
+            <label>Sector / Block (القطاع)</label>
+            <select id="sectorSelect" class="form-control" required>
+              <!-- Populated dynamically from Supabase -->
+            </select>
+          </div>
 
-      <button type="submit" class="btn-submit">حفظ التقرير (Submit Log)</button>
-    </form>
-  </div>
+          <div class="form-group">
+            <label>Log Body (Enter in Lisan ud Dawat / Arabic Script)</label>
+            <textarea id="bodyText" class="form-control kanz-input" placeholder="اكتب تفاصيل التقرير هنا..." required></textarea>
+          </div>
+
+          <!-- Multiple File Upload -->
+          <div class="form-group">
+            <label>Attachments (Upload Multiple Images & PDFs)</label>
+            <input type="file" id="mediaUpload" class="form-control" accept="image/png, image/jpeg, image/webp, application/pdf" multiple>
+            <div id="uploadQueue" class="upload-queue"></div>
+          </div>
+
+          <button type="submit" id="btnSubmitLog" class="btn-primary" style="margin-top: 10px;">
+            Publish Daily Log
+          </button>
+        </form>
+      </section>
+
+      <!-- Tab 2: Manage Existing Logs -->
+      <section id="tab-manage-logs" class="tab-content admin-card">
+        <div class="admin-card-header">
+          <h2>Published Logs History</h2>
+          <button class="btn-secondary" onclick="loadAdminLogs()">Refresh</button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Gregorian Date</th>
+                <th>Hijri Date</th>
+                <th>Sector</th>
+                <th>Files</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminLogsTableBody">
+              <tr><td colspan="5" style="text-align: center;">Loading logs...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tab 3: Add / Delete Sectors (القطاع) -->
+      <section id="tab-manage-sectors" class="tab-content admin-card">
+        <div class="admin-card-header">
+          <h2>Manage Sector Blocks (القطاع)</h2>
+        </div>
+
+        <form id="addSectorForm" style="display: flex; gap: 12px; margin-bottom: 25px;">
+          <input type="text" id="newSectorName" class="form-control" placeholder="e.g. North Gate (البوابة الشمالية)" required>
+          <button type="submit" class="btn-primary" style="white-space: nowrap;">Add Sector Block</button>
+        </form>
+
+        <h3 style="font-size: 1rem; color: var(--fatimi-green); margin-bottom: 12px;">Active Project Sectors</h3>
+        <div id="sectorsList" class="sector-list-container">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+    </div>
+  </main>
 
   <script src="js/hijri_date.js"></script>
   <script src="js/app.js"></script>
-
 </body>
 </html>
